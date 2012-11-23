@@ -174,8 +174,3 @@ class HostVirtualNodeDriver():
             '/cloud/server/password/', data=params,
             method='POST')
 
-if __name__ == '__main__':
-    driver = HostVirtualNodeDriver(
-        'bjSNBp9UpSSrPxA4TA2BasMCPU7qtk6pKvSeYSEBVrI7omW04YHucuDj2Vo4hhDn',
-        '74549')
-    driver.shutdown()
