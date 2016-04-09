@@ -21,7 +21,6 @@ def connection(key):
 
     __key__ = key
     root_url = 'https://{}'.format(API_HOST)
-    headers = {'Content-type': 'application/json; charset=utf-8'}
 
     def request(url, data={}, method='GET'):
         # left size url ;-)
@@ -36,7 +35,7 @@ def connection(key):
                 url_root = "{}&{}".format(url_root, data)
                 response = requests.get(url_root)
             elif method == 'POST':
-                response = requests.post(url_root, data=data, headers=headers)
+                response = requests.post(url_root, json=data)
         except HTTPError:
             raise HostVirtualException(response.status_code, response.content)
 
@@ -113,12 +112,12 @@ class HostVirtualNodeDriver():
             '/cloud/buy_build/', data=params, method='POST')
 
     def rescue(self, mbpkgid, password):
-        params = {'rescue_pass': password}
+        params = {'rescue_pass': str(password)}
         return self.connection(
             '/cloud/server/start_rescue/{}'.format(mbpkgid), data=params,
             method='POST')
 
-    def rescue_stop(self, mbpgid):
+    def rescue_stop(self, mbpkgid):
         return self.connection(
             '/cloud/server/stop_rescue/{}'.format(mbpkgid), method='POST')
 
