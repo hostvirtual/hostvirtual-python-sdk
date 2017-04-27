@@ -66,7 +66,7 @@ class HostVirtualNodeDriver():
         return self.connection('/cloud/sizes/', data=params)
 
     def buy(self, plan):
-        return self.connection('/cloud/package/' + plan)
+        return self.connection('/cloud/buy/' + plan)
 
     def summary(self, mbpkgid):
         return self.connection('/cloud/serversummary/' + str(mbpkgid))
