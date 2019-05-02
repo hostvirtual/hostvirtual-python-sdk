@@ -1,7 +1,11 @@
 import requests
-from requests import *
+# from requests import *
 
-API_HOST = 'vapi.vr.org'
+API_HOSTS = {
+    'v1': 'vapi.vr.org',
+    'v1.1': 'oldthing.test/api/legacy',
+    'v2': 'oldthing.test/api'
+}
 
 
 class HostVirtualException(Exception):
@@ -17,10 +21,13 @@ class HostVirtualException(Exception):
         return "<HostVirtualException in %d : %s>" % (self.code, self.message)
 
 
-def connection(key):
+def connection(key, api_version):
 
     __key__ = key
-    root_url = 'https://{}'.format(API_HOST)
+    if api_version in ['v1', 'v1.1', 'v2']:
+        root_url = 'http://{}'.format(API_HOSTS[api_version])
+    else:
+        root_url = 'http://{}'.format(API_HOSTS['v1'])
 
     def request(url, data={}, method='GET'):
         # left size url ;-)
@@ -32,11 +39,12 @@ def connection(key):
 
         try:
             if method == 'GET':
-                url_root = "{}&{}".format(url_root, data)
+                for k, v in data.items():
+                    url_root = "{}&{}={}".format(url_root, k, v)
                 response = requests.get(url_root)
             elif method == 'POST':
                 response = requests.post(url_root, json=data)
-        except HTTPError:
+        except requests.HTTPError:
             raise HostVirtualException(response.status_code, response.content)
 
         return response
@@ -49,68 +57,67 @@ class HostVirtualNodeDriver():
     name = 'HostVirtual'
     website = 'http://www.vr.org'
 
-    def __init__(self, key):
+    def __init__(self, key, api_version='v1'):
+        self.api_version = api_version
         self.key = key
-        self.connection = connection(self.key)
-
-    def locations(self, pkg=False):
+        self.connection = connection(self.key, api_version=api_version)
+    
+    def locations(self):
         return self.connection('/cloud/locations/')
 
     def os_list(self):
         return self.connection('/cloud/images/')
-
+    
     def plans(self, location=False):
-        params = {}
         if location:
-            params = {'location': location}
-        return self.connection('/cloud/sizes/', data=params)
+            return self.connection('/cloud/sizes/' + str(location))
+        else:
+            return self.connection('/cloud/sizes/')
+    
+    def servers(self, mbpkgid=False):
+        if mbpkgid:
+            result = self.connection('/cloud/server/' + str(mbpkgid))
+        else:
+            result = self.connection('/cloud/servers/')
+        return result
+    
+    def packages(self):
+        return self.connection('/cloud/packages')
+    
+    def package(self, mbpkgid):
+        return self.connection('/cloud/package/' + str(mbpkgid))
 
-    def buy(self, plan):
-        return self.connection('/cloud/buy/' + plan)
+    def ipv4(self, mbpkgid):
+        return self.connection('/cloud/ipv4/' + str(mbpkgid))
 
+    def ipv6(self, mbpkgid):
+        return self.connection('/cloud/ipv6/' + str(mbpkgid))
+    
+    def networkips(self, mbpkgid):
+        return self.connection('/cloud/networkips/' + str(mbpkgid))
+    
     def summary(self, mbpkgid):
         return self.connection('/cloud/serversummary/' + str(mbpkgid))
 
-    def bandwidth_report(self, mbpkgid):
-        return self.connection('/cloud/servermonthlybw/' + str(mbpkgid))
-
-    def networkips(self, mbpkgid):
-        return self.connection('/cloud/networkips/', str(mbpkgid))
-
-    def ipv4(self, mbpkgid):
-        return self.connection('/cloud/ipv4/', str(mbpkgid))
-
-    def ipv6(self, mbpkgid):
-        return self.connection('/cloud/ipv6/', str(mbpkgid))
-
-    def packages(self):
-        return self.connection('/cloud/packages')
-
-    def package(self, mbpkgid):
-        return self.connection('/cloud/package/', str(mbpkgid))
-
-    def servers(self, mbpkgid=None):
+    def start(self, mbpkgid):
+        return self.connection(
+            '/cloud/server/start/{}'.format(mbpkgid), method='POST')
+    
+    def shutdown(self, mbpkgid, force=False):
         params = {}
-        if mbpkgid:
-            params['mbpkgid'] = mbpkgid
-        return self.connection('/cloud/servers/', data=params)
-
-    def build(self, dc, image, fqdn, passwd, mbpkgid):
-        params = {'fqdn': fqdn, 'mbpkgid': mbpkgid,
-                  'image': image, 'location': dc,
-                  'password': passwd}
-
+        if force:
+            params['force'] = 1
         return self.connection(
-            '/cloud/server/build/', data=params, method='POST')
-
-    def buy_build(self, plan, dc, image, fqdn, passwd, mbpkgid):
-        params = {'fqdn': fqdn, 'mbpkgid': mbpkgid,
-                  'image': image, 'location': dc,
-                  'password': passwd, 'plan': plan}
-
+            '/cloud/server/shutdown/{}'.format(mbpkgid), data=params, method='POST')
+    
+    def reboot(self, mbpkgid, force=False):
+        params = {}
+        if force:
+            params['force'] = 1
         return self.connection(
-            '/cloud/buy_build/', data=params, method='POST')
-
+            '/cloud/server/reboot/{}'.format(mbpkgid), data=params,
+            method='POST')
+    
     def rescue(self, mbpkgid, password):
         params = {'rescue_pass': str(password)}
         return self.connection(
@@ -121,37 +128,44 @@ class HostVirtualNodeDriver():
         return self.connection(
             '/cloud/server/stop_rescue/{}'.format(mbpkgid), method='POST')
 
-    def reboot(self, mbpkgid, force=False):
-        params = {}
-        if force:
-            params['force'] = 1
-        return self.connection(
-            '/cloud/server/reboot/{}'.format(mbpkgid), data=params,
-            method='POST')
+    def build(self, dc, image, fqdn, passwd, mbpkgid):
+        params = {'fqdn': fqdn, 'mbpkgid': mbpkgid,
+                  'image': image, 'location': dc,
+                  'password': passwd}
 
-    def shutdown(self, mbpkgid, force=False):
-        params = {}
-        if force:
-            params['force'] = 1
         return self.connection(
-            '/cloud/server/stop/{}'.format(mbpkgid), data=params, method='POST')
-
-    def start(self, mbpkgid):
-        return self.connection(
-            '/cloud/server/start/{}'.format(mbpkgid), method='POST')
+            '/cloud/server/build/', data=params, method='POST')
 
     def delete(self, mbpkgid):
         return self.connection(
             '/cloud/server/delete/{}'.format(mbpkgid), method='POST')
 
-    def cancel(self, mbpkgid):
-        return self.connection(
-            '/cloud/cancel/{}'.format(mbpkgid), method='POST')
-
     def unlink(self, mbpkgid, force=False):
         return self.connection(
             '/cloud/unlink/{}'.format(mbpkgid), method='POST')
 
+    def status(self, mbpkgid):
+        return self.connection('/cloud/status/{0}'.format(mbpkgid))
+
+    def bandwidth_report(self, mbpkgid):
+        return self.connection('/cloud/servermonthlybw/' + str(mbpkgid))
+
+    def cancel(self, mbpkgid):
+        return self.connection(
+            '/cloud/cancel/{}'.format(mbpkgid), method='POST')
+
+    def buy(self, plan):
+        return self.connection('/cloud/buy/' + plan)
+
+    def buy_build(self, plan, dc, image, fqdn, passwd, mbpkgid):
+        params = {'fqdn': fqdn, 'mbpkgid': mbpkgid,
+                  'image': image, 'location': dc,
+                  'password': passwd, 'plan': plan}
+
+        return self.connection(
+            '/cloud/buy_build/', data=params, method='POST')
+
+    # TODO
     # root password call is not enabled for api key use yet,
     # however you can auth with the account password to verify & submit
     # params['email']= 'abc@cde.com'
