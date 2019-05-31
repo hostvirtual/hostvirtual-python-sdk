@@ -4,7 +4,7 @@ import requests
 API_HOSTS = {
     'v1': 'vapi.vr.org',
     'v1.1': 'oldthing.test/api/legacy',
-    'v2': 'oldthing.test/api'
+    'v2': 'oldthing.test/api/legacy'
 }
 
 
