@@ -1,4 +1,6 @@
 hostvirtual-python-sdk
 ======================
 
-Python SDK
+Standard Python SDK (hostvirtual.py)
+Asyncio Python SDK (aiohostvirtual.py)
+
