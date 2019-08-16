@@ -6,16 +6,16 @@
 
 
 ### aiohostvirtual example
-   from aiohostvirtual import (
-       HostVirtualException,
-	   HostVirtualNodeDriver,
-	   HVJobStatus
-   )
-
-   api_key = <your api key>
-   conn = HostVirtualNodeDriver(api_key)
-   pkgid = <one of your server package IDs>
-   pkg_status = conn.status(pkgid)
-   servers = conn.servers() # to get a list of all your servers
-   server = conn.server(pkgid) # to specify one server
-   locations = conn.locations() # to see a list of available locations
+    from aiohostvirtual import (
+        HostVirtualException,
+	    HostVirtualNodeDriver,
+	    HVJobStatus
+    )
+ 
+    api_key = <your api key>
+    conn = HostVirtualNodeDriver(api_key)
+    pkgid = <one of your server package IDs>
+    pkg_status = conn.status(pkgid)
+    servers = conn.servers() # to get a list of all your servers
+    server = conn.server(pkgid) # to specify one server
+    locations = conn.locations() # to see a list of available locations
