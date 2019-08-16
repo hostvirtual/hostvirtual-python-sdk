@@ -55,10 +55,13 @@ class HVFromDict(object):
 
 
 class HVJobStatus(object):
-    def __init__(self, conn=None, node_id=None, job_result={}):
+    def __init__(self, conn=None, node_id=None, job_result=None):
+        if job_result is None:
+            self.job_result = {}
+        else:
+            self.job_result = job_result
         self.conn = conn
         self.node_id = node_id
-        self.job_result = job_result # json.loads(job_result)
         self._job = None
 
     async def status(self):
@@ -118,8 +121,11 @@ def connection(key, api_version):
     else:
         root_url = 'http://{}'.format(API_HOSTS['v1'])
 
-    async def request(url, data={}, method='GET'):
-        # left size url ;-)
+    async def request(url, data=None, method=None):
+        if method is None:
+            method = 'GET'
+        if data is None:
+            data = {}
         if not url.startswith('/'):
             url = '/{}'.format(url)
 
@@ -147,8 +153,11 @@ class HostVirtualNodeDriver():
     name = 'HostVirtual'
     website = 'http://www.vr.org'
 
-    def __init__(self, key, api_version='v1'):
-        self.api_version = api_version
+    def __init__(self, key, api_version=None):
+        if api_version is None:
+            self.api_version = 'v1'
+        else:
+            self.api_version = api_version
         self.key = key
         self.connection = connection(
             self.key,

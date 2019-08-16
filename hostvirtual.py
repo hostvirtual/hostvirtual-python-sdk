@@ -29,8 +29,11 @@ def connection(key, api_version):
     else:
         root_url = 'http://{}'.format(API_HOSTS['v1'])
 
-    def request(url, data={}, method='GET'):
-        # left size url ;-)
+    def request(url, data=None, method=None):
+        if method is None:
+            method = 'GET'
+        if data is None:
+            data = {}
         if not url.startswith('/'):
             url = '/{}'.format(url)
 
@@ -58,8 +61,11 @@ class HostVirtualNodeDriver():
     name = 'HostVirtual'
     website = 'http://www.vr.org'
 
-    def __init__(self, key, api_version='v1'):
-        self.api_version = api_version
+    def __init__(self, key, api_version=None):
+        if api_version is None:
+            self.api_version = 'v1'
+        else:
+            self.api_version = api_version
         self.key = key
         self.connection = connection(self.key, api_version=api_version)
 
